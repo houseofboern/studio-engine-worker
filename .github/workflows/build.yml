@@ -12,9 +12,9 @@ jobs:
         with: { repository: runpod-workers/worker-comfyui, ref: '5.11.0', path: upstream }
       - uses: docker/login-action@v3
         with: { registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}' }
-      - name: base (Runpod recipe, ComfyUI 0.42.1)
+      - name: base (Runpod recipe, ComfyUI 0.42.1, then moved to f99de883 in our Dockerfile)
         run: docker build --target base --build-arg COMFYUI_VERSION=0.42.1 -t kitty-base:local upstream
       - name: ours
         run: |
-          docker build -t ghcr.io/houseofboern/kitty-runpod-worker:0421c .
-          docker push ghcr.io/houseofboern/kitty-runpod-worker:0421c
+          docker build -t ghcr.io/houseofboern/kitty-runpod-worker:h3a .
+          docker push ghcr.io/houseofboern/kitty-runpod-worker:h3a
