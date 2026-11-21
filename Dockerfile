@@ -5,7 +5,7 @@ FROM ${BASE}
 ARG COMFY_COMMIT=f99de883d5e65317c7f4a4b617b5aa7936622029
 ARG AUSBOSS_COMMIT=9ab4365245b33a8927ecd2d7c747fc4c7e6a76b1
 RUN git clone -q --filter=blob:none https://github.com/comfyanonymous/ComfyUI /tmp/cu && cd /tmp/cu && git checkout -q ${COMFY_COMMIT} \
- && rm -rf .git && cp -a /tmp/cu/. /comfyui/ && rm -rf /tmp/cu && uv pip install -r /comfyui/requirements.txt \
+ && rm -rf .git && cp -a /tmp/cu/. /comfyui/ && cd /comfyui && rm -rf /tmp/cu && uv pip install -r /comfyui/requirements.txt \
  && git clone -q https://github.com/ausboss/ComfyUI-AusBoss /comfyui/custom_nodes/ComfyUI-AusBoss \
  && cd /comfyui/custom_nodes/ComfyUI-AusBoss && git checkout -q ${AUSBOSS_COMMIT} \
  && { [ -f requirements.txt ] && uv pip install -r requirements.txt || true; }
