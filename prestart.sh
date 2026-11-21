@@ -10,14 +10,27 @@ for d in diffusion_models text_encoders vae loras; do
   mkdir -p "$M/$d"
   for f in "$C$d"/*; do [ -e "$f" ] && ln -sf "$(readlink -f "$f")" "$M/$d/$(basename "$f")"; done
 done
-AUTH=(); [ -n "${HF_TOKEN:-}" ] && AUTH=(-H "Authorization: Bearer $HF_TOKEN")
-LIVE=$(curl -sf -m 20 "${AUTH[@]}" "https://huggingface.co/api/models/$CACHE_REPO/tree/main/loras" \
-  | python3 -c "import json,sys; [print(x['path'].split('/')[-1]) for x in json.load(sys.stdin) if x['path'].endswith('.safetensors')]" 2>/dev/null)
-for n in $LIVE; do
-  [ -e "$M/loras/$n" ] && continue
-  if curl -sfL -m 300 "${AUTH[@]}" -o "$M/loras/$n.part" "https://huggingface.co/$CACHE_REPO/resolve/main/loras/$n"; then
-    mv "$M/loras/$n.part" "$M/loras/$n"; echo "PRESTART_FETCHED $n"
-  else rm -f "$M/loras/$n.part"; echo "PRESTART_FETCH_FAIL $n"; fi
-done
+# Python (proven present: the Dockerfile runs it) instead of curl, which may be missing from the base image.
+python - <<'PY' || echo "PRESTART_FETCH_STEP_FAILED"
+import json, os, urllib.request
+repo, tok, d = os.environ['CACHE_REPO'], os.environ.get('HF_TOKEN', ''), '/comfyui/models/loras'
+h = {'Authorization': 'Bearer ' + tok} if tok else {}
+get = lambda u, t=30: urllib.request.urlopen(urllib.request.Request(u, headers=h), timeout=t)
+names = [x['path'].split('/')[-1] for x in json.load(get(f'https://huggingface.co/api/models/{repo}/tree/main/loras')) if x['path'].endswith('.safetensors')]
+print('PRESTART_LIVE_LORAS', len(names), flush=True)
+for n in names:
+    dst = os.path.join(d, n)
+    if os.path.exists(dst): continue
+    try:
+        with get(f'https://huggingface.co/{repo}/resolve/main/loras/{n}', 600) as r, open(dst + '.part', 'wb') as f:
+            while True:
+                c = r.read(8 << 20)
+                if not c: break
+                f.write(c)
+        os.replace(dst + '.part', dst); print('PRESTART_FETCHED', n, flush=True)
+    except Exception as e:
+        print('PRESTART_FETCH_FAIL', n, e, flush=True)
+        if os.path.exists(dst + '.part'): os.remove(dst + '.part')
+PY
 echo "PRESTART_OK from $C"; ls -l $M/diffusion_models $M/text_encoders $M/vae $M/loras
 exec /start.sh
