@@ -16,5 +16,5 @@ jobs:
         run: docker build --target base --build-arg COMFYUI_VERSION=0.42.1 -t kitty-base:local upstream
       - name: ours
         run: |
-          docker build -t ghcr.io/houseofboern/kitty-runpod-worker:h3a .
-          docker push ghcr.io/houseofboern/kitty-runpod-worker:h3a
+          docker build -t ghcr.io/houseofboern/studio-engine-worker:h3a .
+          docker push ghcr.io/houseofboern/studio-engine-worker:h3a
