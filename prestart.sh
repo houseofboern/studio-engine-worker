@@ -40,4 +40,12 @@ for n in names:
         if os.path.exists(dst + '.part'): os.remove(dst + '.part')
 PY
 echo "PRESTART_OK from $C"; ls -l $M/diffusion_models $M/text_encoders $M/vae $M/loras
+# 2026-11-22 Connor: ALWAYS start ComfyUI with --disable-dynamic-vram. Without it ComfyUI rounds away ~15% of every LoRA
+# (shootthesound / Peter Neal, Fizgig author, Reddit 2026-11). Patches the stock /start.sh; fails loudly if it can't.
+# Escape hatch only for a measured out-of-memory: KEEP_DYNAMIC_VRAM=1.
+if [ "${KEEP_DYNAMIC_VRAM:-0}" != "1" ]; then
+  grep -q -- "--disable-dynamic-vram" /start.sh || sed -i -E 's#(comfyui/main\.py)#\1 --disable-dynamic-vram#' /start.sh
+  grep -q -- "--disable-dynamic-vram" /start.sh || { echo "BOOT_FAIL: could not add --disable-dynamic-vram to /start.sh"; exit 1; }
+  echo "BOOT: ComfyUI will start with --disable-dynamic-vram"
+fi
 exec /start.sh
